@@ -5,10 +5,7 @@ A portfolio proof of concept that answers questions about **publicly available A
 The project covers the full workflow: public-data collection, cleaning, chunking, embeddings, vector retrieval, a PydanticAI chatbot, guardrails, and a reproducible comparison of multiple RAG configurations.
 
 **Technical report:** [REPORT.md](REPORT.md)
-
-<!-- After deployment, add the public URL here, for example:
-**Live demo:** https://your-app.streamlit.app
--->
+**Live demo:** https://airbank-rag-assistant.streamlit.app
 
 > This is an unofficial portfolio project. It is not affiliated with or endorsed by Air Bank and it cannot access customer accounts or perform banking actions.
 
