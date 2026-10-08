@@ -145,6 +145,8 @@ Never commit `.env`.
 
 ## 2. Prepare data from scratch
 
+> **Note:** This step is optional. The repository already contains the collected and processed data used for the demo and evaluation. Run the commands below only if you want to rebuild the dataset from the current public Air Bank website.
+
 Collect up to 200 public Air Bank HTML pages plus selected official documents:
 
 ```bash
