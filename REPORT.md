@@ -2,15 +2,28 @@
 
 ## 1. Purpose
 
-This project is a small proof of concept for a retrieval-augmented generation (RAG) assistant over publicly available Air Bank information. The goal is not to reproduce a production banking assistant. The goal is to demonstrate the complete workflow behind a practical LLM application: collecting public data, cleaning and indexing it, retrieving relevant context, generating grounded answers, and evaluating different RAG configurations.
+This project is a small proof of concept for a Retrieval-Augmented Generation (RAG) assistant over publicly available Air Bank information.
 
-The assistant answers questions about topics such as accounts, cards, payments, savings, loans, mortgages, fees, and digital banking. It uses a PydanticAI agent backed by an OpenAI model. For factual Air Bank questions, the agent must retrieve information from the local knowledge base before answering. The application also includes simple guardrails: it does not access customer accounts, perform banking actions, request authentication secrets, or provide personalized financial or legal decisions.
+The goal is not to build a production banking assistant, but to demonstrate the main workflow behind a practical LLM application:
 
-This is an unofficial portfolio demonstration and uses only public Air Bank information.
+- collecting and processing public data;
+- chunking and embedding documents;
+- semantic retrieval;
+- grounded answer generation;
+- prompt and guardrail design;
+- evaluation of different RAG configurations.
 
-## 2. Main idea
+The assistant can answer questions about topics such as accounts, cards, payments, savings, loans, mortgages, fees, and digital banking.
 
-A basic chatbot can answer many questions from model memory, but that is not reliable enough for information that is specific, frequently updated, or legally important. RAG addresses this by separating the language model from the factual source of truth.
+It is an unofficial portfolio project and uses only publicly available Air Bank data.
+
+---
+
+## 2. System design
+
+A language model can answer many general questions from its internal knowledge, but this is unreliable for company-specific or frequently changing information.
+
+RAG addresses this by retrieving relevant information from an external knowledge base before generating the answer.
 
 The application follows this flow:
 
@@ -29,74 +42,107 @@ semantic retrieval
         ↓
 PydanticAI agent
         ↓
-grounded answer + source links
+grounded answer + sources
 ```
 
-The corpus is collected from Air Bank's public website and official downloadable documents. HTML and PDF content is normalized into the same document format and stored together with metadata such as title, URL, category, source type, and collection time.
+The data is collected from Air Bank's public website and selected official downloadable documents. HTML and PDF sources are converted into a common document format containing the text and metadata such as title, URL, source type, and collection time.
 
-For the final demo, the selected configuration is:
+The final demo uses:
 
-- embedding model: `text-embedding-3-large`
-- chunk size: 800 characters
-- overlap: 100 characters
-- retrieval: top 5 chunks, with at most 2 chunks from one document
+- **LLM:** OpenAI GPT-5.6 Luna
+- **Embedding model:** `text-embedding-3-large`
+- **Chunk size:** 800 characters
+- **Chunk overlap:** 100 characters
+- **Retrieval:** top 5 chunks, with at most 2 chunks from one document
 
-The vector store is deliberately simple: normalized embeddings are stored locally and cosine similarity is calculated with NumPy. For this proof of concept, a separate vector database would add operational complexity without providing meaningful value.
+The vector index is intentionally simple. Embeddings are stored locally and cosine similarity is calculated using NumPy. For a small proof of concept, introducing a dedicated vector database would add unnecessary complexity.
+
+---
 
 ## 3. Evaluation approach
 
-The evaluation was designed to compare RAG configurations rather than to claim production-level accuracy.
+The evaluation is intentionally lightweight. It is **not sufficient for estimating production-level performance**.
 
-A synthetic evaluation dataset of 30 question-answer pairs was generated automatically. For each item:
+Its main purpose is to demonstrate a complete RAG evaluation workflow and compare several retrieval configurations under the same conditions.
 
-1. one source document was randomly selected;
-2. a contiguous excerpt was sampled from that document;
-3. an LLM generated one factual Czech question and a concise ground-truth answer using only that excerpt;
-4. the source document ID was stored as the known relevant source.
+The benchmark is small and somewhat noisy, but because every configuration is evaluated using the same dataset and procedure, it can still provide, to some extent, useful information about their relative performance.
 
-This makes it possible to evaluate retrieval automatically because the correct source document is known in advance.
+For generation tasks, including dataset generation, chatbot responses, and LLM-based judging, the project uses **OpenAI GPT-5.6 Luna** through the OpenAI API.
+
+### Evaluation dataset
+
+The evaluation dataset contains 30 automatically generated question-answer pairs.
+
+For each item:
+
+1. one source document is selected;
+2. an excerpt is sampled from the document;
+3. GPT-5.6 Luna generates a factual Czech question and a concise reference answer based only on the excerpt;
+4. the source document is stored as the known relevant source.
+
+This provides a simple ground truth for retrieval evaluation.
+
+The generated questions were not manually validated and are mostly straightforward factual questions. The benchmark is therefore mainly useful for comparing configurations rather than estimating real-world chatbot accuracy.
 
 ### Retrieval experiment
 
-Nine configurations were evaluated in a 3 × 3 grid.
+Nine configurations were tested in a **3 × 3 grid**.
 
-Embedding models:
+Three OpenAI embedding models were compared:
 
-- `text-embedding-3-small`
-- `text-embedding-3-large`
-- `text-embedding-ada-002`
+- **`text-embedding-3-small`** — a newer, smaller and more efficient embedding model;
+- **`text-embedding-3-large`** — a newer, higher-capacity embedding model with 3072-dimensional vectors;
+- **`text-embedding-ada-002`** — an older embedding model used as a legacy baseline.
 
-Chunking strategies:
+These models were selected to compare:
 
-- small: 800 characters / 100 overlap
-- medium: 1600 / 250
-- large: 2400 / 400
+- an older baseline;
+- a modern efficient model;
+- a modern higher-capability model.
 
-Retrieval was measured at the source-document level using:
+All three are available through the OpenAI Embeddings API.
 
-- Recall/Hit@1
-- Recall/Hit@3
-- Recall/Hit@5
-- MRR@5
-- nDCG@5
+Three chunking strategies were tested:
 
-Because every question has exactly one known relevant source document, Hit@K and Recall@K are equivalent in this experiment.
+- **small:** 800 characters / 100 overlap
+- **medium:** 1600 / 250
+- **large:** 2400 / 400
+
+Retrieval quality was measured at the source-document level using:
+
+- **Recall/Hit@1** — how often the correct source was ranked first;
+- **Recall/Hit@3** — how often it appeared in the top 3;
+- **Recall/Hit@5** — how often it appeared in the top 5;
+- **MRR@5** — rewards placing the correct source higher in the ranking;
+- **nDCG@5** — another rank-sensitive retrieval metric.
+
+Because every evaluation question has exactly one known relevant source document, Hit@K and Recall@K are equivalent in this experiment.
 
 ### End-to-end answer evaluation
 
-The same configurations were also tested through the complete chatbot pipeline. The generated answer was compared with the synthetic ground-truth answer by an LLM judge using a 1–5 scale:
+The same nine configurations were also evaluated through the complete chatbot pipeline.
 
-- 5: fully correct and complete
-- 4: essentially correct with only a minor omission
-- 3: partially correct
-- 2: mostly incorrect
-- 1: incorrect, irrelevant, or unjustified refusal
+For each question:
 
-The report also records the proportion of answers scoring at least 4.
+1. the RAG system retrieved relevant context;
+2. the chatbot generated an answer;
+3. GPT-5.6 Luna compared the generated answer with the reference answer.
 
-## 4. Final evaluation results
+The LLM judge assigned a score from 1 to 5:
 
-The following table contains the results from the final evaluation run.
+- **5** — fully correct and complete
+- **4** — essentially correct
+- **3** — partially correct
+- **2** — mostly incorrect
+- **1** — incorrect or irrelevant
+
+The percentage of answers scoring at least 4 was also recorded.
+
+The judge score should only be treated as an approximate comparative signal, because the evaluator is itself an LLM and was not calibrated.
+
+---
+
+## 4. Results
 
 | Embedding model | Chunking | R@1 | R@3 | R@5 | MRR@5 | nDCG@5 | Judge | Score ≥4 |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -110,103 +156,124 @@ The following table contains the results from the final evaluation run.
 | text-embedding-ada-002 | 1600/250 | 80.0% | 93.3% | 93.3% | 0.867 | 0.884 | 4.80 | 96.7% |
 | text-embedding-ada-002 | 2400/400 | 80.0% | 93.3% | 93.3% | 0.856 | 0.875 | 4.87 | **100.0%** |
 
-The best retrieval configuration was **`text-embedding-3-large` with 800/100 chunking**. It achieved R@1 of 83.3%, perfect R@3 and R@5, MRR@5 of 0.917, and nDCG@5 of 0.938.
+The strongest retrieval configuration was:
 
-The best end-to-end mean judge score was achieved by **`text-embedding-3-small` with 2400/400 chunking**, with 4.97/5 and 100% of answers scoring at least 4.
+**`text-embedding-3-large` + 800/100 chunking**
 
-The fact that these two winners differ is useful. Retrieval metrics measure whether the known relevant source is found and how highly it is ranked. Final-answer quality additionally depends on the exact passages returned, how much surrounding context is included, and how the language model interprets that context.
+It achieved:
 
-For the final demo, I selected **`text-embedding-3-large` with 800/100 chunking**. It provides the strongest retrieval results overall while maintaining very high end-to-end answer quality at 4.87/5. The 0.10 difference between the two highest judge averages is small on a 30-question benchmark and is not strong enough evidence to prefer a configuration with weaker retrieval.
+- R@1: **83.3%**
+- R@3: **100%**
+- R@5: **100%**
+- MRR@5: **0.917**
+- nDCG@5: **0.938**
 
-## 5. Why the evaluation looks better than real usage
+The highest LLM-judge score was achieved by:
 
-The measured results are intentionally useful for relative comparison, but they should not be interpreted as a production accuracy estimate.
+**`text-embedding-3-small` + 2400/400 chunking**
 
-The main reason is that the benchmark is easier than real user traffic. Questions are generated directly from the same source corpus that the retriever searches. The generator sees a source excerpt and creates a factual question from it, so the resulting vocabulary and concepts are naturally aligned with the source. Real users may use different terminology, incomplete descriptions, spelling mistakes, or vague references.
+with:
 
-The experiment is also narrow by design. It excludes ambiguous questions, multi-turn behavior, out-of-scope requests, adversarial prompts, and questions that require combining several sources. Those are common sources of failure in a real assistant.
+- mean judge score: **4.97/5**
+- score ≥4: **100%**
 
-Another important limitation is that retrieval is evaluated at the **document level**, not at the exact answer-bearing chunk level. If the correct PDF appears in the top results but the retrieved chunk is from the wrong section of that PDF, the retrieval metric still counts the source as correct. This can make the retrieval scores optimistic for large documents.
+The fact that these two configurations differ is useful, but the difference may also partly reflect noise in the small evaluation set and in the LLM-based judge. Retrieval metrics measure whether the known relevant source is found and how highly it is ranked, while final-answer quality also depends on the exact retrieved passages and how the language model uses them.
 
-The answer judge also introduces uncertainty. It is an LLM-based evaluator rather than a human reviewer. It is useful for scalable comparison, but it may accept semantically similar answers that a domain expert would consider incomplete or insufficiently precise.
+For the final demo, I selected **`text-embedding-3-large` with 800/100 chunking** because it provided the strongest retrieval performance overall while still achieving a very high end-to-end score of 4.87/5.
 
-Finally, the dataset contains only 30 questions. One question changes a percentage metric by roughly 3.3 percentage points. Small differences between configurations therefore should not be treated as statistically conclusive.
+Given the small evaluation dataset, the difference between judge scores should not be considered statistically significant.
 
-For these reasons, the correct interpretation of the benchmark is:
+---
 
-> The evaluation shows that the RAG pipeline works and provides a controlled way to compare retrieval and chunking configurations. It does not show that the assistant is 95–100% reliable on real customer questions.
+## 5. Limitations
 
-## 6. What real-world evaluation would look like
+This is deliberately a small proof of concept. The points below are only examples of the main limitations; a production system would require a much broader analysis and additional safeguards.
 
-For a production system, I would replace or complement the synthetic set with a larger human-written benchmark representative of actual user behavior. If privacy and access policies allowed it, anonymized real support/search queries would be especially valuable.
+- **The evaluation dataset is small and not manually validated.** The questions are LLM-generated from source excerpts but were not individually checked for realism, correctness, difficulty, or whether the expected answer is the best possible one.
 
-The evaluation set should include:
+- **The evaluation questions are too easy and narrow.** They mostly test straightforward factual lookup. They do not cover unsupported questions, out-of-scope requests, multi-hop reasoning, inappropriate requests, ambiguous wording, conversational follow-ups, or realistic human phrasing with incomplete context, typos, shorthand, and imprecise terminology.
 
-- natural paraphrases that do not reuse the source wording;
-- short and underspecified questions;
-- spelling mistakes and colloquial language;
-- questions requiring information from multiple sources;
-- time-sensitive questions where effective dates matter;
-- questions for which the knowledge base does not contain an answer;
-- multi-turn questions that depend on previous context;
-- difficult PDF/table content;
-- conflicting or superseded documents.
+- **Retrieval is based on basic dense semantic search.** There is no hybrid lexical search, reranking, query reformulation, answer-aware retrieval, keyword matching, or other second-stage relevance processing.
 
-Retrieval labels should ideally be made at the **chunk or passage level**, not only at the source-document level. Human review of a subset of final answers would also be used to calibrate the LLM judge.
+- **Retrieval quality is evaluated at the whole-document level.** A document can count as correctly retrieved even when the exact answer-bearing passage was not returned.
 
-## 7. Improvements for a production version
+- **Displayed sources are not independently filtered for usefulness.** The application displays retrieved sources in retrieval order, even when only one or two directly support the answer.
 
-The current system intentionally stays simple. If this were developed further, I would focus on measured failure modes rather than adding complexity by default.
+- **The knowledge base covers only part of Air Bank's public information.** The demo contains roughly 200 public pages and documents rather than the complete public website.
 
-The most likely improvements would be:
+- **Guardrails are minimal.** The application mainly relies on prompt-level instructions and simple application logic.
 
-1. **Better retrieval evaluation.** Build a human-authored benchmark and label the exact relevant passages.
-2. **Hybrid retrieval.** Combine dense semantic retrieval with lexical/BM25 search. Exact product names, fees, numbers, and legal terminology often benefit from lexical matching.
-3. **Reranking.** Retrieve a wider candidate set and use a reranker to select the most relevant passages before sending context to the LLM.
-4. **Structure-aware chunking.** Split documents using headings, sections, tables, and semantic boundaries instead of only character limits.
-5. **Freshness and version metadata.** Track effective dates, prefer current documents, and automatically re-crawl/re-index changed sources.
-6. **Source prioritization.** Prefer authoritative product pages and current contractual documents when several sources contain similar information.
-7. **Grounding verification.** Validate that important claims and numbers in the final answer are supported by retrieved passages, and abstain when support is weak.
-8. **Observability.** Store anonymized retrieval traces, response quality feedback, latency, model usage, and failure categories for continuous evaluation.
-9. **Production session/storage design.** Replace the in-memory session store with a persistent or distributed store and introduce appropriate authentication, rate limits, monitoring, and privacy controls.
+- **The system relies on general-purpose hosted models.** Generation and embeddings use external OpenAI APIs rather than domain-specific or fine-tuned models, and hosted models may change over time.
 
-## 8. Reproducibility
+- **Operational performance was not evaluated.** Latency, token usage, API cost, throughput, rate limits, infrastructure cost, and failure rates were not measured.
+
+- **Conversation handling is simplified.** Sessions are stored in memory and are appropriate for a demo, not for a distributed production system.
+
+These limitations also explain why the measured evaluation scores are significantly better than the assistant's expected performance on real customer traffic.
+
+---
+
+## 6. What I would improve for a production system
+
+The next steps should be driven by observed failure cases rather than adding complexity by default.
+
+The most important improvements would be:
+
+1. **A realistic evaluation dataset** based on manually validated questions or anonymized real user queries.
+2. **Passage-level relevance labels** instead of only document-level labels.
+3. **Hybrid retrieval**, combining semantic embeddings with lexical/BM25 search.
+4. **Reranking** of a larger candidate set before providing context to the LLM.
+5. **Query reformulation** for unclear, incomplete, or conversational user questions.
+6. **Structure-aware chunking** using headings, sections, tables, and document structure.
+7. **Source and freshness prioritization**, especially for rates, contractual documents, and superseded information.
+8. **Stronger grounding checks** to ensure important claims are directly supported by retrieved passages.
+9. **Stronger guardrails** for unsupported, sensitive, or inappropriate requests.
+10. **Observability and operational evaluation**, including latency, token usage, cost, failure rates, and user feedback.
+
+---
+
+## 7. Reproducibility
 
 The experiment is designed to be reproducible from frozen inputs.
 
-The evaluation code fixes the complete 3 × 3 embedding/chunking grid, uses a fixed source-selection seed (`42`) when creating the synthetic evaluation dataset, records fingerprints for the processed corpus and dataset, and writes a `reproducibility_manifest.json` for the evaluation run. The environment is also locked with `uv.lock`.
+The repository stores:
 
-For the closest reproduction of the results reported above, the repository should preserve:
+- the processed Air Bank corpus;
+- the generated evaluation dataset;
+- the evaluation results;
+- corpus and dataset fingerprints;
+- the evaluation configuration;
+- the dependency lock file (`uv.lock`);
+- a `reproducibility_manifest.json`.
 
-- `data/processed/documents.jsonl`
-- `data/processed/collection_summary.json`
-- `evaluation/dataset.jsonl`
-- `evaluation/dataset.manifest.json`
-- `evaluation/results/reproducibility_manifest.json`
-- the final evaluation result files
-- `uv.lock`
+The evaluation code also uses a fixed source-selection seed (`42`).
 
-With these frozen inputs, another user can install the same dependency set, rebuild all nine vector indexes, and rerun the same evaluation procedure.
+For the closest reproduction of the reported results, the frozen corpus and evaluation dataset should be reused.
 
-There are two important limits to this reproducibility claim. First, collecting the Air Bank website again creates a **new corpus snapshot**. Public pages, interest rates, downloadable documents, and site structure can change. A fresh crawl therefore reproduces the methodology, but not necessarily the exact experiment.
+There are two important limitations to reproducibility:
 
-Second, the QA generator, chatbot, embedding API, and judge use hosted models. LLM generation and judging are not guaranteed to be bit-for-bit deterministic, and hosted implementations may evolve over time.
+1. **Air Bank's website can change.** Re-running data collection creates a new dataset snapshot and may produce different results.
+2. **Hosted models can change.** LLM generation, embeddings, and LLM judging are not guaranteed to be bit-for-bit deterministic over time.
 
 The project therefore distinguishes between:
 
-- **Reproducing the reported experiment:** reuse the frozen corpus and QA dataset from this run, install dependencies from `uv.lock`, rebuild the indexes, and rerun evaluation.
-- **Replicating the methodology:** recollect the current Air Bank website, generate a new QA benchmark using the same seed and settings, and rerun the same evaluation grid.
+- **reproducing the experiment** — using the frozen corpus and evaluation dataset;
+- **replicating the methodology** — collecting current data and rerunning the same evaluation workflow.
 
-The final results in this report came from a fresh end-to-end run in which the corpus and QA benchmark were regenerated before evaluation. They differ somewhat from an earlier development run. That is expected and demonstrates why the exact corpus and benchmark must be frozen when reporting reproducible numbers.
+The latter may produce different numbers while still following the same procedure.
 
-After this final run, its corpus, QA dataset, lock file, result files, and `reproducibility_manifest.json` should be archived or committed together. Those files define the frozen experiment behind the reported numbers.
+---
 
-## 9. Conclusion
+## 8. Conclusion
 
-The project demonstrates an end-to-end RAG workflow rather than only a chatbot interface. Public Air Bank data is collected and normalized, indexed with embeddings, retrieved through a PydanticAI tool, and used to ground LLM answers. A controlled evaluation compares nine embedding/chunking configurations and measures both retrieval and final-answer quality.
+This project demonstrates a complete RAG workflow rather than only a chatbot interface.
 
-On the final evaluation run, **`text-embedding-3-large` with 800/100 chunking produced the strongest retrieval performance**, with 100% R@3 and R@5 and the best MRR@5 and nDCG@5 values. A different configuration, `text-embedding-3-small` with 2400/400 chunking, achieved the highest LLM-judge score. This illustrates that retrieval metrics and final-generation metrics measure related but different parts of the RAG pipeline.
+Public Air Bank data is collected and processed, divided into chunks, embedded, retrieved through semantic search, and provided to a PydanticAI agent to generate grounded answers.
 
-The final demo therefore uses `text-embedding-3-large` with 800/100 chunking because it gives the strongest and most consistent retrieval behavior while maintaining very high end-to-end answer quality.
+A simple evaluation pipeline compares nine combinations of embedding models and chunking strategies.
 
-The most important limitation is also the most useful lesson from the experiment: strong synthetic RAG metrics do not automatically imply strong real-world behavior. A production system would require a harder, representative evaluation set, passage-level relevance labels, freshness controls, and iterative improvements based on observed failure cases.
+On the final benchmark, **`text-embedding-3-large` with 800/100 chunking achieved the strongest retrieval performance**, including 100% R@3 and R@5.
+
+A different configuration achieved a slightly higher LLM-judge score, demonstrating that retrieval quality and final-answer quality measure different parts of the RAG pipeline.
+
+The final demo therefore uses `text-embedding-3-large` with 800/100 chunking.
