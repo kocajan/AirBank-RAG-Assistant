@@ -308,55 +308,6 @@ Stop with `Ctrl+C`, then:
 docker compose down
 ```
 
-## 7. Deployment
-
-The intended public-demo setup is:
-
-```text
-Streamlit Community Cloud  →  Railway FastAPI backend  →  OpenAI API
-                                      │
-                                      └─ local packaged RAG index
-```
-
-### Backend: Railway
-
-Deploy this repository as a Railway service using the root `Dockerfile`. `railway.toml` configures `/health` as the health check.
-
-Set these Railway variables:
-
-```text
-OPENAI_API_KEY=<secret>
-OPENAI_MODEL=gpt-5.6-luna
-EMBEDDING_MODEL=text-embedding-3-large
-RAG_INDEX_DIR=data/index
-RAG_TOP_K=5
-RAG_MIN_SCORE=0.15
-RAG_MAX_CHUNKS_PER_DOCUMENT=2
-RAG_MAX_SOURCES=5
-MAX_TURNS_PER_SESSION=30
-MAX_SESSIONS=500
-```
-
-The committed `data/index/` must contain the final built index so the backend can answer immediately after startup.
-
-### Frontend: Streamlit Community Cloud
-
-Deploy the same GitHub repository and use:
-
-```text
-frontend/app.py
-```
-
-as the entrypoint.
-
-Add this secret in Streamlit Community Cloud:
-
-```toml
-BACKEND_URL = "https://<your-railway-domain>"
-```
-
-After deployment, add the public Streamlit URL near the top of this README.
-
 ## Reproducibility
 
 The experiment is reproducible **from frozen inputs**, not guaranteed to be bit-for-bit deterministic.
@@ -377,26 +328,29 @@ evaluation/results/reproducibility_manifest.json
 
 A fresh crawl or regenerated QA dataset is a replication of the methodology, not an exact reproduction, because the Air Bank website and hosted model behavior can change over time.
 
-Before publishing the repository, run:
-
-```bash
-uv run python scripts/check_release.py
-```
-
-The checker verifies that the expected frozen artifacts and final demo index are present and that the active index uses the selected configuration.
-
 ## Limitations
 
-This is deliberately a small proof of concept. The main limitations are:
+This is deliberately a small proof of concept, so the evaluation and retrieval pipeline are intentionally simplified. The points below are only examples of the main limitations; a production system would require a much broader analysis and additional safeguards.
 
-- synthetic rather than human-authored evaluation questions;
-- document-level rather than passage-level retrieval labels;
-- only 30 evaluation questions;
-- dense retrieval only, without BM25/hybrid retrieval or reranking;
-- simple character-based chunking;
-- hosted LLM/embedding services can evolve;
-- in-memory conversation sessions;
-- public-data-only scope.
+- **The evaluation dataset is small and not manually validated.** The questions are LLM-generated from source excerpts, but they were not individually checked for realism, correctness, difficulty, or whether the expected answer is actually the best possible one.
+
+- **The evaluation questions are too easy and narrow.** They mostly test straightforward factual lookup. They do not cover unsupported questions, out-of-scope requests, multi-hop reasoning, inappropriate requests, ambiguous wording, conversational follow-ups, or realistic human phrasing with incomplete context, typos, shorthand, and imprecise terminology.
+
+- **Retrieval is based on basic dense semantic search.** There is no hybrid lexical search, reranking, query reformulation, answer-aware retrieval, keyword matching, or other second-stage relevance checks that could improve precision.
+
+- **Source relevance is evaluated too broadly.** Retrieval quality is measured at the whole-document level rather than at the exact passage or chunk containing the answer. A document can therefore count as relevant even when the retrieved passage is not the one that actually supports the response.
+
+- **Displayed sources are not independently filtered for usefulness.** The application shows retrieved sources in retrieval order, even though some may be only weakly related while only one or two actually support the answer.
+
+- **The knowledge base covers only a subset of Air Bank's public information.** The demo indexes roughly 200 public documents/pages rather than the complete public website and all available documents.
+
+- **Guardrails are minimal.** The system contains simple prompt-level restrictions, but it does not implement stronger policy enforcement, dedicated safety classifiers, structured refusal logic, or comprehensive handling of unsupported or sensitive requests.
+
+- **The system relies on general-purpose hosted models.** Both generation and embeddings use external API models rather than domain-specific or fine-tuned models, and their behavior may change over time.
+
+- **Operational quality was not evaluated.** The experiment does not measure latency, token usage, API cost, throughput, failure rate, rate limits, or infrastructure cost.
+
+- **Conversation handling is simplified.** Session memory is stored in memory and is suitable for a demo, not for a distributed or production deployment.
 
 The production-oriented improvements and rationale are discussed in [REPORT.md](REPORT.md).
 
