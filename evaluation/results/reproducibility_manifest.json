@@ -1,0 +1,102 @@
+{
+  "created_at": "2026-10-07T16:47:47.884248+00:00",
+  "project_version": "1.1.0",
+  "python": {
+    "version": "3.13.15 (main, Aug 14 2026, 15:34:59) [Clang 22.1.3 ]",
+    "implementation": "CPython",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43"
+  },
+  "packages": {
+    "beautifulsoup4": "4.15.0",
+    "fastapi": "0.142.2",
+    "httpx": "0.28.1",
+    "numpy": "2.5.3",
+    "openai": "2.54.0",
+    "pydantic": "2.13.5",
+    "pydantic-ai-slim": "1.107.7",
+    "pydantic-settings": "2.15.0",
+    "pymupdf": "1.28.2",
+    "streamlit": "1.65.0",
+    "uvicorn": "0.54.0"
+  },
+  "inputs": {
+    "documents_path": "/home/jan-koca/Projects/Portfolio/AirBank/data/processed/documents.jsonl",
+    "documents_file_sha256": "dc58db89eec8569cc680cef405d145f12318fe5070ea118b5c311ce438bd02d5",
+    "corpus_content_fingerprint": "8378984f4f5b2acf830dbdc8b9c6fb4a783606409e4878d1640c74a3f5d91411",
+    "dataset_path": "/home/jan-koca/Projects/Portfolio/AirBank/evaluation/dataset.jsonl",
+    "dataset_sha256": "c50be955e01c546e76deefe5089ea22c6b5c2d9eaef6fed26055fdb8bf761b51",
+    "dataset_manifest_path": "/home/jan-koca/Projects/Portfolio/AirBank/evaluation/dataset.manifest.json",
+    "dataset_manifest_sha256": "e78da94e099a1eec781e4804f61060dbc719c49cd177b737b7f06b679e202f67"
+  },
+  "evaluation": {
+    "retrieval_top_k": 10,
+    "limit": null,
+    "judge_enabled": true,
+    "judge_model": "gpt-5.6-luna",
+    "grid": [
+      {
+        "slug": "text-embedding-3-small__small",
+        "embedding_model": "text-embedding-3-small",
+        "chunking_name": "small",
+        "chunk_size": 800,
+        "chunk_overlap": 100
+      },
+      {
+        "slug": "text-embedding-3-small__medium",
+        "embedding_model": "text-embedding-3-small",
+        "chunking_name": "medium",
+        "chunk_size": 1600,
+        "chunk_overlap": 250
+      },
+      {
+        "slug": "text-embedding-3-small__large",
+        "embedding_model": "text-embedding-3-small",
+        "chunking_name": "large",
+        "chunk_size": 2400,
+        "chunk_overlap": 400
+      },
+      {
+        "slug": "text-embedding-3-large__small",
+        "embedding_model": "text-embedding-3-large",
+        "chunking_name": "small",
+        "chunk_size": 800,
+        "chunk_overlap": 100
+      },
+      {
+        "slug": "text-embedding-3-large__medium",
+        "embedding_model": "text-embedding-3-large",
+        "chunking_name": "medium",
+        "chunk_size": 1600,
+        "chunk_overlap": 250
+      },
+      {
+        "slug": "text-embedding-3-large__large",
+        "embedding_model": "text-embedding-3-large",
+        "chunking_name": "large",
+        "chunk_size": 2400,
+        "chunk_overlap": 400
+      },
+      {
+        "slug": "text-embedding-ada-002__small",
+        "embedding_model": "text-embedding-ada-002",
+        "chunking_name": "small",
+        "chunk_size": 800,
+        "chunk_overlap": 100
+      },
+      {
+        "slug": "text-embedding-ada-002__medium",
+        "embedding_model": "text-embedding-ada-002",
+        "chunking_name": "medium",
+        "chunk_size": 1600,
+        "chunk_overlap": 250
+      },
+      {
+        "slug": "text-embedding-ada-002__large",
+        "embedding_model": "text-embedding-ada-002",
+        "chunking_name": "large",
+        "chunk_size": 2400,
+        "chunk_overlap": 400
+      }
+    ]
+  }
+}

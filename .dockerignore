@@ -1,0 +1,10 @@
+.git
+.venv
+__pycache__
+.pytest_cache
+.env
+.streamlit/secrets.toml
+tests
+data/raw
+data/evaluation
+# Keep data/index: the backend image/compose mount needs the built demo index.

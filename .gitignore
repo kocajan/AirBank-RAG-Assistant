@@ -1,0 +1,29 @@
+# Secrets
+.env
+.streamlit/secrets.toml
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Raw crawl artifacts are large and can be re-downloaded.
+data/raw/html/*.html
+data/raw/pdf/*.pdf
+
+# Keep the processed corpus snapshot used by the reported experiment.
+# Committing data/processed/documents.jsonl + collection_summary.json makes
+# the retrieval experiment reproducible against the same source snapshot.
+
+# Re-creatable vector indexes
+data/evaluation/indexes/*
+!data/evaluation/indexes/.gitkeep
+
+# Detailed per-question outputs can be regenerated from the frozen inputs.
+evaluation/results/*.jsonl

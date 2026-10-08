@@ -1,0 +1,29 @@
+{
+  "collected_at": "2026-10-07T15:50:47.060479+00:00",
+  "content_fingerprint": "8378984f4f5b2acf830dbdc8b9c6fb4a783606409e4878d1640c74a3f5d91411",
+  "documents": 207,
+  "html_documents": 198,
+  "pdf_documents": 9,
+  "stats": {
+    "html_discovered": 200,
+    "html_collected": 198,
+    "pdf_discovered": 9,
+    "pdf_collected": 9,
+    "skipped": 1,
+    "failed": 1
+  },
+  "categories": [
+    "Anety",
+    "Cestovní pojištění",
+    "Internetové a mobilní bankovnictví",
+    "Karty",
+    "Karty a placení",
+    "Naše účty",
+    "Official documents",
+    "Poradna",
+    "Půjčky, kontokorent, hypotéky",
+    "Reklamace",
+    "Virtuální asistentka Aneta",
+    "pojištění půjčky"
+  ]
+}
